@@ -44,7 +44,7 @@
             android:id="@+id/et_ip"
             android:layout_width="298dp"
             android:layout_height="33dp"
-            android:background="@drawable/input_back_line"
+            android:background="@drawable/input_wireframe_bai"
             android:digits="1234567890."
             android:ems="10"
             android:hint="请输入IP"
