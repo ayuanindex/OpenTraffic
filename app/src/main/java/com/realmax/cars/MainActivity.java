@@ -1,9 +1,6 @@
 package com.realmax.cars;
 
-import android.app.Activity;
-import android.app.ActivityOptions;
 import android.content.Intent;
-import android.net.http.HttpResponseCache;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
