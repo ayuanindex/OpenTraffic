@@ -1,4 +1,4 @@
-package com.realmax.cars.tcputil;
+package com.realmax.cars.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
