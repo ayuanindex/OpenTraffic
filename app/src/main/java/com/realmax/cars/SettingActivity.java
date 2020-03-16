@@ -1,7 +1,9 @@
 package com.realmax.cars;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -10,7 +12,11 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
+
+import com.realmax.cars.tcputil.TCPConnected;
+import com.realmax.cars.utils.SpUtil;
+
+import java.net.Socket;
 
 /**
  * @ProjectName: Cars
@@ -19,11 +25,13 @@ import androidx.constraintlayout.widget.ConstraintLayout;
  * @CreateDate: 2020/3/14 11:06
  */
 public class SettingActivity extends AppCompatActivity implements View.OnClickListener {
+    private static final String TAG = "SettingActivity";
     private EditText et_ip;
     private TextView tv_port;
     private TextView tv_link_status;
     private Button btn_link;
     private Button btn_back;
+    private String host;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -51,7 +59,7 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_link:
-
+                submit();
                 break;
             case R.id.btn_back:
                 finish();
@@ -60,7 +68,15 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     private void initData() {
-
+        String status = "";
+        if (TCPConnected.getSocket() == null) {
+            status = "通讯：未连接";
+        } else {
+            status = "通讯：已连接";
+        }
+        tv_link_status.setText(status);
+        host = SpUtil.getString("host", "127.0.0.1");
+        et_ip.setText(host);
     }
 
     private void submit() {
@@ -69,6 +85,39 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
             Toast.makeText(this, "请输入IP", Toast.LENGTH_SHORT).show();
             return;
         }
-        // TODO validate success, do something
+        if (!host.equals(ip) && TCPConnected.getSocket() != null) {
+            TCPConnected.stop();
+            tv_link_status.setText("通讯：未连接");
+        } else if (TCPConnected.getSocket() != null) {
+            Log.i(TAG, "onClick: 已连接");
+            Toast.makeText(SettingActivity.this, "已连接", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                String host = et_ip.getText().toString().trim();
+                Socket socket = TCPConnected.start(host, 8527);
+                String msg = "";
+                if (socket != null) {
+                    msg = "连接成功";
+                    SpUtil.putString("host", host);
+                    host = host;
+                    et_ip.setText(host);
+                } else {
+                    msg = "连接失败";
+                }
+                String finalMsg = msg;
+                runOnUiThread(new Runnable() {
+                    @SuppressLint("SetTextI18n")
+                    @Override
+                    public void run() {
+                        tv_link_status.setText("通讯：" + (finalMsg.equals("连接成功") ? "已连接" : "未连接"));
+                        Toast.makeText(SettingActivity.this, finalMsg, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        }.start();
     }
 }

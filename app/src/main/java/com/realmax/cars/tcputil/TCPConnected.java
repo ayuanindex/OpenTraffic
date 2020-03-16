@@ -1,16 +1,15 @@
 package com.realmax.cars.tcputil;
 
-import android.util.Log;
-
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-
-import static android.content.ContentValues.TAG;
 
 /**
  * @ProjectName: Cars
@@ -28,6 +27,10 @@ public class TCPConnected {
      * 输出流：发送数据
      */
     private static OutputStream outputStream = null;
+
+    public static Socket getSocket() {
+        return socket;
+    }
 
     /**
      * 开启TCP连接
@@ -56,6 +59,7 @@ public class TCPConnected {
             // 关闭连接
             if (!socket.isClosed()) {
                 socket.close();
+                socket = null;
             }
 
             // 关闭输出流
@@ -80,28 +84,54 @@ public class TCPConnected {
      * @param camera_num  摄像头编号
      */
     public static void start_camera(String device_type, int device_id, int camera_num) {
+        if (socket == null) {
+            return;
+        }
         new Thread() {
             @Override
             public void run() {
                 super.run();
                 try {
+                    String text = "";
                     HashMap<String, Object> hashMap = new HashMap<>();
                     hashMap.put("cmd", "start");
                     hashMap.put("deviceType", device_type);
                     hashMap.put("device_id", device_id);
                     hashMap.put("cameraNum", camera_num);
-                    // 获取到json格式的指令
                     String command = getJsonString(hashMap);
-                    Log.i(TAG, "start_camera: " + command);
-                    outputStream.write(command.getBytes());
+                    // 帧头
+                    int head = 0xaaff;
+                    // 协议版本号
+                    int version = 0x02;
+                    // 帧长度
+                    byte[] buf = command.getBytes(StandardCharsets.UTF_8);
+                    int size = buf.length + 22;
+                    int len = size - 4;
+                    int tail = 0x55ff;
+                    // 获取到json格式的指令
+                    text = "" + head + version + len + command;
+                    outputStream.write(text.getBytes(StandardCharsets.UTF_8));
                     outputStream.flush();
-                    outputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
 
             }
         }.start();
+    }
+
+    public static String fetch_camera() {
+        if (socket == null) {
+            return "";
+        }
+
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            return getData(bufferedReader.readLine());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     public static void stop_camera() {

@@ -69,13 +69,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
-        new Thread() {
-            @Override
-            public void run() {
-                super.run();
-                socket = TCPConnected.start("192.168.50.247", 8527);
-            }
-        }.start();
+
     }
 
     @Override
