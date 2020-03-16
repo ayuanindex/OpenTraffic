@@ -17,11 +17,11 @@ import java.util.HashMap;
 public class TCPConnected {
     private static Socket socket = null;
     /**
-     * 输入流：发送数据
+     * 输入流：读取数据
      */
     private static InputStream inputStream = null;
     /**
-     * 输出流：拿到返回数据
+     * 输出流：发送数据
      */
     private static OutputStream outputStream = null;
 
@@ -81,6 +81,7 @@ public class TCPConnected {
         hashMap.put("cameraNum", camera_num);
         // 获取到json格式的指令
         String command = getJsonString(hashMap);
+
     }
 
     public static void stop_camera() {
