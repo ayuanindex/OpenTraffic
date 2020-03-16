@@ -10,6 +10,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.realmax.cars.tcputil.TCPConnected;
+
+import java.net.Socket;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "MainActivity";
     private TextView tv_link_status;
@@ -21,6 +25,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btn_camera_two;
     private Button btn_setting;
     private boolean flag = false;
+    private Socket socket;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,10 +57,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_camera_one:
-                // TODO: 2020/3/14  
+                TCPConnected.start_camera("小车", 1, 1);
                 break;
             case R.id.btn_camera_two:
-                // TODO: 2020/3/14  
+                TCPConnected.start_camera("小车", 1, 2);
                 break;
             case R.id.btn_setting:
                 startActivity(new Intent(this, SettingActivity.class));
@@ -64,7 +69,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
-        // TODO: 2020/3/14  
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                socket = TCPConnected.start("192.168.50.247", 8527);
+            }
+        }.start();
     }
 
     @Override

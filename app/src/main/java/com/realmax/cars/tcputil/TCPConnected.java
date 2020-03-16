@@ -1,5 +1,7 @@
 package com.realmax.cars.tcputil;
 
+import android.util.Log;
+
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -7,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.HashMap;
+
+import static android.content.ContentValues.TAG;
 
 /**
  * @ProjectName: Cars
@@ -35,6 +39,8 @@ public class TCPConnected {
     public static Socket start(String host, int port) {
         try {
             socket = new Socket(host, port);
+            inputStream = socket.getInputStream();
+            outputStream = socket.getOutputStream();
             return socket;
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,14 +80,28 @@ public class TCPConnected {
      * @param camera_num  摄像头编号
      */
     public static void start_camera(String device_type, int device_id, int camera_num) {
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("cmd", "start");
-        hashMap.put("deviceType", device_type);
-        hashMap.put("device_id", device_id);
-        hashMap.put("cameraNum", camera_num);
-        // 获取到json格式的指令
-        String command = getJsonString(hashMap);
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    HashMap<String, Object> hashMap = new HashMap<>();
+                    hashMap.put("cmd", "start");
+                    hashMap.put("deviceType", device_type);
+                    hashMap.put("device_id", device_id);
+                    hashMap.put("cameraNum", camera_num);
+                    // 获取到json格式的指令
+                    String command = getJsonString(hashMap);
+                    Log.i(TAG, "start_camera: " + command);
+                    outputStream.write(command.getBytes());
+                    outputStream.flush();
+                    outputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
+            }
+        }.start();
     }
 
     public static void stop_camera() {
