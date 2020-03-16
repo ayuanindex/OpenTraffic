@@ -2,8 +2,10 @@ package com.realmax.cars.tcputil;
 
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.HashMap;
@@ -15,6 +17,7 @@ import java.util.HashMap;
  * @CreateDate: 2020/3/16 09:32
  */
 public class TCPConnected {
+    private static final String TAG = "TCPConnected";
     private static Socket socket = null;
     /**
      * 输入流：读取数据
@@ -89,7 +92,6 @@ public class TCPConnected {
             public void run() {
                 super.run();
                 try {
-                    String text = "";
                     HashMap<String, Object> hashMap = new HashMap<>();
                     hashMap.put("cmd", "start");
                     hashMap.put("deviceType", device_type);
@@ -98,7 +100,6 @@ public class TCPConnected {
                     // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
 
-                    outputStream.write(text.getBytes());
                     outputStream.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -106,6 +107,17 @@ public class TCPConnected {
 
             }
         }.start();
+    }
+
+    public static int checkSum(byte[] bytes, int size) {
+        int cs = 0;
+        int i = 2;
+        int j = size - 3;
+        while (i < j) {
+            cs += bytes[i];
+            i += 1;
+        }
+        return cs & 0xff;
     }
 
     /**
@@ -133,10 +145,8 @@ public class TCPConnected {
         }
 
         try {
-            byte[] data = new byte[1024];
-            int len = inputStream.read(data);
-
-            return getData(new String(data, 0, len));
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            return getData(bufferedReader.readLine());
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -59,12 +59,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_camera_one:
-                TCPConnected.stop_camera();
                 TCPConnected.start_camera("小车", 1, 1);
                 getData();
                 break;
             case R.id.btn_camera_two:
-                TCPConnected.stop_camera();
                 TCPConnected.start_camera("小车", 1, 2);
                 break;
             case R.id.btn_setting:
