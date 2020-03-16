@@ -1,7 +1,9 @@
 package com.realmax.cars;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -57,9 +59,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_camera_one:
+                TCPConnected.stop_camera();
                 TCPConnected.start_camera("小车", 1, 1);
+                getData();
                 break;
             case R.id.btn_camera_two:
+                TCPConnected.stop_camera();
                 TCPConnected.start_camera("小车", 1, 2);
                 break;
             case R.id.btn_setting:
@@ -68,8 +73,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void initData() {
+        // 显示状态
+        tv_link_status.setText("通讯：未连接");
+        tv_device.setText("设备：小车");
+        tv_device_id.setText("ID：" + 1);
+        tv_camera_number.setText("摄像头：" + 1);
+    }
 
+    private void getData() {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                while (true) {
+                    try {
+                        sleep(500);
+                        try {
+                            // 接受服务端返回的数据
+                            String s = TCPConnected.fetch_camera();
+                            Log.i(TAG, "run: " + s);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }.start();
     }
 
     @Override
@@ -91,6 +124,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }
             }.start();
             Toast.makeText(this, "再按一次退出", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (TCPConnected.getSocket() != null && TCPConnected.getSocket().isConnected()) {
+            tv_link_status.setText("通讯：已连接");
         }
     }
 }

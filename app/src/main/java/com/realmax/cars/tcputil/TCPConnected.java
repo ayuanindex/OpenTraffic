@@ -2,13 +2,10 @@ package com.realmax.cars.tcputil;
 
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
@@ -98,19 +95,10 @@ public class TCPConnected {
                     hashMap.put("deviceType", device_type);
                     hashMap.put("device_id", device_id);
                     hashMap.put("cameraNum", camera_num);
+                    // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
-                    // 帧头
-                    int head = 0xaaff;
-                    // 协议版本号
-                    int version = 0x02;
-                    // 帧长度
-                    byte[] buf = command.getBytes(StandardCharsets.UTF_8);
-                    int size = buf.length + 22;
-                    int len = size - 4;
-                    int tail = 0x55ff;
-                    // 获取到json格式的指令
-                    text = "" + head + version + len + command;
-                    outputStream.write(text.getBytes(StandardCharsets.UTF_8));
+
+                    outputStream.write(text.getBytes());
                     outputStream.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -120,14 +108,35 @@ public class TCPConnected {
         }.start();
     }
 
+    /**
+     * int转换为小端byte[]（高位放在高地址中）
+     *
+     * @param iValue
+     * @return
+     */
+    public static byte[] Int2Bytes_LE(int iValue) {
+        byte[] rst = new byte[4];
+        // 先写int的最后一个字节
+        rst[0] = (byte) (iValue & 0xFF);
+        // int 倒数第二个字节
+        rst[1] = (byte) ((iValue & 0xFF00) >> 8);
+        // int 倒数第三个字节
+        rst[2] = (byte) ((iValue & 0xFF0000) >> 16);
+        // int 第一个字节
+        rst[3] = (byte) ((iValue & 0xFF000000) >> 24);
+        return rst;
+    }
+
     public static String fetch_camera() {
         if (socket == null) {
             return "";
         }
 
         try {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            return getData(bufferedReader.readLine());
+            byte[] data = new byte[1024];
+            int len = inputStream.read(data);
+
+            return getData(new String(data, 0, len));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -159,31 +168,6 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getData(String data) {
-        boolean flag = false;
-        int count = 0;
-        char leftChar = '{';
-        char rightChar = '}';
-        StringBuilder objcpy = new StringBuilder();
-        for (int i = 0; i < data.length(); i++) {
-            char c = data.charAt(i);
-            if (c == leftChar) {
-                flag = true;
-                count++;
-            }
-
-
-            if (flag) {
-                objcpy.append(c);
-            }
-
-            if (c == rightChar) {
-                count--;
-                if (count == 0) {
-                    flag = false;
-                    return new String(objcpy);
-                }
-            }
-        }
-        return null;
+        return data.substring(7, data.length() - 3);
     }
 }
