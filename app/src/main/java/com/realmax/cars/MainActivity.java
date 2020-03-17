@@ -2,16 +2,19 @@ package com.realmax.cars;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.tcputil.TCPConnected;
 import com.realmax.cars.utils.EncodeAndDecode;
 
@@ -88,15 +91,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      */
     private void getData() {
         new Thread() {
+            @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
             public void run() {
                 super.run();
                 while (true) {
                     try {
-                        sleep(10000);
                         // 接受服务端返回的数据
-                        String s = TCPConnected.fetch_camera();
-                        Log.i(TAG, "收到的消息" + s);
+                        BodyBean bodyBean = TCPConnected.fetch_camera();
+                        if (bodyBean != null) {
+                            Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(bodyBean.getCameraImg());
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    iv_image.setImageBitmap(bitmap);
+                                }
+                            });
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

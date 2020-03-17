@@ -2,6 +2,8 @@ package com.realmax.cars.tcputil;
 
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import org.json.JSONObject;
@@ -22,6 +24,8 @@ import java.util.HashMap;
 public class TCPConnected {
     private static final String TAG = "TCPConnected";
     private static Socket socket = null;
+    private static StringBuilder result = new StringBuilder("");
+    private static boolean flag = false;
     /**
      * 输入流：读取数据
      */
@@ -139,7 +143,7 @@ public class TCPConnected {
         byte[] tailBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xff55)).getBytes();
         byte[] len = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x530000)).getBytes();
         byte[] check = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x97)).getBytes();
-        
+
         /*int size = commandBytes.length + 10;
         int len = size - 4;*/
         // 将所有数据的额byte数组拼接起来
@@ -206,20 +210,36 @@ public class TCPConnected {
         return rst;
     }
 
-    public static String fetch_camera() {
+    public static BodyBean fetch_camera() {
         if (socket == null) {
-            return "";
+            return null;
         }
 
         try {
+            char left = '{';
+            char right = '}';
             byte[] bytes = new byte[1024];
             int read = inputStream.read(bytes);
-            String s = new String(bytes, 0, read, StandardCharsets.UTF_8);
-            return s;
+            String s = new String(bytes, 0, read);
+            for (char c : s.toCharArray()) {
+                if (c == left) {
+                    flag = true;
+                }
+                if (flag) {
+                    result.append(c);
+                }
+                if (c == right) {
+                    flag = false;
+                    String string = result.toString();
+                    result = new StringBuilder("");
+                    BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
+                    return bodyBean;
+                }
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return "";
+        return null;
     }
 
     public static void stop_camera() {
@@ -248,6 +268,6 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getData(String data) {
-        return data.substring(7, data.length() - 3);
+        return data.substring(72, data.length() - 2);
     }
 }
