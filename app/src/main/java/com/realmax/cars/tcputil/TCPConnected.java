@@ -1,13 +1,14 @@
 package com.realmax.cars.tcputil;
 
+import com.realmax.cars.utils.EncodeAndDecode;
+
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 /**
@@ -99,7 +100,12 @@ public class TCPConnected {
                     hashMap.put("cameraNum", camera_num);
                     // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
-
+                    byte[] commandBytes = command.getBytes();
+                    byte[] headBytes = EncodeAndDecode.decode16ToStr("ffaa").getBytes();
+                    byte[] versionBytes = EncodeAndDecode.decode16ToStr("02").getBytes();
+                    byte[] tailBytes = EncodeAndDecode.decode16ToStr("ff55").getBytes();
+                    byte[] combine = combine(headBytes, versionBytes, commandBytes);
+                    outputStream.write(combine);
                     outputStream.flush();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -107,6 +113,26 @@ public class TCPConnected {
 
             }
         }.start();
+    }
+
+    /**
+     * 任意个byte数组合并
+     *
+     * @param bytes
+     * @return 发挥合并后的byte数组
+     */
+    public static byte[] combine(byte[]... bytes) {
+        int length = 0;
+        int len = 0;
+        for (byte[] aByte : bytes) {
+            length += aByte.length;
+        }
+        byte[] ret = new byte[length];
+        for (byte[] aByte : bytes) {
+            System.arraycopy(aByte, 0, ret, len, aByte.length);
+            len += aByte.length;
+        }
+        return ret;
     }
 
     public static int checkSum(byte[] bytes, int size) {
@@ -145,8 +171,10 @@ public class TCPConnected {
         }
 
         try {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            return getData(bufferedReader.readLine());
+            byte[] bytes = new byte[1024];
+            int read = inputStream.read(bytes);
+            String s = new String(bytes, 0, read, StandardCharsets.UTF_8);
+            return s;
         } catch (IOException e) {
             e.printStackTrace();
         }

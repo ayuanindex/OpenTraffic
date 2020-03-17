@@ -92,10 +92,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 super.run();
                 while (true) {
                     try {
-                        sleep(500);
+                        sleep(10000);
                         // 接受服务端返回的数据
                         String s = TCPConnected.fetch_camera();
-                        Log.i(TAG, "run: " + s);
+                        Log.i(TAG, "收到的消息" + s);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
