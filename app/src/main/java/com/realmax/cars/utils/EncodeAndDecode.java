@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 
@@ -12,8 +11,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Base64.Decoder;
-
-import static android.content.ContentValues.TAG;
 
 
 /**
@@ -98,5 +95,29 @@ public class EncodeAndDecode {
             e.printStackTrace();
         }
         return s;
+    }
+
+    public static String getStrUnicode(String inStr) {
+        StringBuffer unicode = new StringBuffer();
+        char c;
+        int bit;
+        String tmp = null;
+        for (int i = 0; i < inStr.length(); i++) {
+            c = inStr.charAt(i);
+            if (c > 255) {
+                unicode.append("\\u");
+                bit = (c >>> 8);
+                tmp = Integer.toHexString(bit);
+                if (tmp.length() == 1) unicode.append("0");
+                unicode.append(tmp);
+                bit = (c & 0xFF);
+                tmp = Integer.toHexString(bit);
+                if (tmp.length() == 1) unicode.append("0");
+                unicode.append(tmp);
+            } else {
+                unicode.append(c);
+            }
+        }
+        return (new String(unicode));
     }
 }

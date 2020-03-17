@@ -1,5 +1,7 @@
 package com.realmax.cars.tcputil;
 
+import android.util.Log;
+
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import org.json.JSONObject;
@@ -111,6 +113,15 @@ public class TCPConnected {
         }.start();
     }
 
+    /*def checksum(self, buffer, size):
+        cs = 0
+        i = 2
+        j = size - 3
+        while i < j:
+            cs += buffer[i]
+            i += 1
+        return cs & 0xff*/
+
     /**
      * 将需要发送的消息加工成服务端可识别的数据
      *
@@ -119,17 +130,25 @@ public class TCPConnected {
      */
     private static byte[] option(String command) {
         // 指令
-        byte[] commandBytes = command.getBytes();
+        byte[] commandBytes = command.getBytes(StandardCharsets.UTF_8);
         // 帧头
         byte[] headBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xffaa)).getBytes();
         // 版本号
         byte[] versionBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x02)).getBytes();
         // 帧尾
         byte[] tailBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xff55)).getBytes();
-        int size = commandBytes.length + 10;
-        int len = size - 4;
-
-        return combine(headBytes, versionBytes, commandBytes, tailBytes);
+        byte[] len = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x530000)).getBytes();
+        byte[] check = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x97)).getBytes();
+        
+        /*int size = commandBytes.length + 10;
+        int len = size - 4;*/
+        // 将所有数据的额byte数组拼接起来
+        byte[] start = new byte[]{(byte) 0xff, (byte) 0xaa, (byte) 0x02, (byte) 0x53, (byte) 0x00, (byte) 0x00, (byte) 0x00};
+        byte[] end = {(byte) 0x97, (byte) 0xff, 0x55};
+        byte[] combine = combine(start, commandBytes, end);
+        Log.i(TAG, "option: " + new String(combine));
+        return combine;
+        /*return combine(headBytes, versionBytes, len, commandBytes, check, tailBytes);*/
     }
 
     /**
@@ -208,6 +227,7 @@ public class TCPConnected {
         hashMap.put("cmd", "stop");
         // 获取到json格式的指令
         String command = getJsonString(hashMap);
+        option(command);
     }
 
     /**

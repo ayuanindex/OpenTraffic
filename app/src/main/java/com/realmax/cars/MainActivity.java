@@ -13,6 +13,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.realmax.cars.tcputil.TCPConnected;
+import com.realmax.cars.utils.EncodeAndDecode;
 
 import java.net.Socket;
 
@@ -59,11 +60,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_camera_one:
-                TCPConnected.start_camera("小车", 1, 1);
+                TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 1);
                 getData();
                 break;
             case R.id.btn_camera_two:
-                TCPConnected.start_camera("小车", 1, 2);
+                TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 2);
                 break;
             case R.id.btn_setting:
                 startActivity(new Intent(this, SettingActivity.class));
