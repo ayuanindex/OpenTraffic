@@ -102,11 +102,11 @@ public class TCPConnected {
                     HashMap<String, Object> hashMap = new HashMap<>();
                     hashMap.put("cmd", "start");
                     hashMap.put("deviceType", device_type);
-                    hashMap.put("device_id", device_id);
+                    hashMap.put("deviceId", device_id);
                     hashMap.put("cameraNum", camera_num);
                     // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
-                    byte[] combine = option(command);
+                    byte[] combine = option(EncodeAndDecode.getStrUnicode(command));
                     outputStream.write(combine);
                     outputStream.flush();
                 } catch (IOException e) {
