@@ -1,5 +1,7 @@
 package com.realmax.cars.tcputil;
 
+import android.util.Log;
+
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import org.json.JSONObject;
@@ -101,10 +103,11 @@ public class TCPConnected {
                     // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
                     byte[] commandBytes = command.getBytes();
-                    byte[] headBytes = EncodeAndDecode.decode16ToStr("ffaa").getBytes();
+                    byte[] headBytes = EncodeAndDecode.decode16ToStr("FFAA").getBytes();
                     byte[] versionBytes = EncodeAndDecode.decode16ToStr("02").getBytes();
-                    byte[] tailBytes = EncodeAndDecode.decode16ToStr("ff55").getBytes();
+                    byte[] tailBytes = EncodeAndDecode.decode16ToStr("FF55").getBytes();
                     byte[] combine = combine(headBytes, versionBytes, commandBytes);
+                    Log.i(TAG, "run: " + new String(commandBytes));
                     outputStream.write(combine);
                     outputStream.flush();
                 } catch (IOException e) {
@@ -122,15 +125,20 @@ public class TCPConnected {
      * @return 发挥合并后的byte数组
      */
     public static byte[] combine(byte[]... bytes) {
+        // 开始合并的位置
+        int position = 0;
+        // 新数组的总长度
         int length = 0;
-        int len = 0;
+        // 算出新数组的总长度
         for (byte[] aByte : bytes) {
             length += aByte.length;
         }
+        // 创建一个新的byte数组
         byte[] ret = new byte[length];
+        // 将byte数组合并成一个byte数组
         for (byte[] aByte : bytes) {
-            System.arraycopy(aByte, 0, ret, len, aByte.length);
-            len += aByte.length;
+            System.arraycopy(aByte, 0, ret, position, aByte.length);
+            position += aByte.length;
         }
         return ret;
     }
