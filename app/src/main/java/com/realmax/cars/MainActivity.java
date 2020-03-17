@@ -78,8 +78,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tv_device.setText("设备：小车");
         tv_device_id.setText("ID：" + 1);
         tv_camera_number.setText("摄像头：" + 1);
+
+        getData();
     }
 
+    /**
+     * 获取返回的数据
+     */
     private void getData() {
         new Thread() {
             @Override
@@ -88,14 +93,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 while (true) {
                     try {
                         sleep(500);
-                        try {
-                            // 接受服务端返回的数据
-                            String s = TCPConnected.fetch_camera();
-                            Log.i(TAG, "run: " + s);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    } catch (InterruptedException e) {
+                        // 接受服务端返回的数据
+                        String s = TCPConnected.fetch_camera();
+                        Log.i(TAG, "run: " + s);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
