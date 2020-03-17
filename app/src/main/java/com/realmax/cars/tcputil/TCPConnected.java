@@ -1,7 +1,5 @@
 package com.realmax.cars.tcputil;
 
-import android.util.Log;
-
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import org.json.JSONObject;
@@ -102,12 +100,7 @@ public class TCPConnected {
                     hashMap.put("cameraNum", camera_num);
                     // 将传入参数转换成json字符串
                     String command = getJsonString(hashMap);
-                    byte[] commandBytes = command.getBytes();
-                    byte[] headBytes = EncodeAndDecode.decode16ToStr("FFAA").getBytes();
-                    byte[] versionBytes = EncodeAndDecode.decode16ToStr("02").getBytes();
-                    byte[] tailBytes = EncodeAndDecode.decode16ToStr("FF55").getBytes();
-                    byte[] combine = combine(headBytes, versionBytes, commandBytes);
-                    Log.i(TAG, "run: " + new String(commandBytes));
+                    byte[] combine = option(command);
                     outputStream.write(combine);
                     outputStream.flush();
                 } catch (IOException e) {
@@ -116,6 +109,27 @@ public class TCPConnected {
 
             }
         }.start();
+    }
+
+    /**
+     * 将需要发送的消息加工成服务端可识别的数据
+     *
+     * @param command 需要发送的指令
+     * @return 返回数据的byte数组
+     */
+    private static byte[] option(String command) {
+        // 指令
+        byte[] commandBytes = command.getBytes();
+        // 帧头
+        byte[] headBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xffaa)).getBytes();
+        // 版本号
+        byte[] versionBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x02)).getBytes();
+        // 帧尾
+        byte[] tailBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xff55)).getBytes();
+        int size = commandBytes.length + 10;
+        int len = size - 4;
+
+        return combine(headBytes, versionBytes, commandBytes, tailBytes);
     }
 
     /**
