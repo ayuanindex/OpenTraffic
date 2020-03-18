@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -63,9 +64,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void initEvent() {
         sp_select.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-
+                CameraBean cameraBean = cameraBeans.get(position);
+                tv_device.setText("设备：" + cameraBean.getName());
+                tv_device_id.setText("ID：" + cameraBean.getId());
+                tv_camera_number.setText("摄像头：" + cameraBean.getCameraId());
+                TCPConnected.start_camera(cameraBean.getName(), cameraBean.getId(), cameraBean.getCameraId());
             }
 
             @Override
