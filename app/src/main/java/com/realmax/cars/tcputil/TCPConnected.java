@@ -224,9 +224,9 @@ public class TCPConnected {
         return ret;
     }
 
-    public static BodyBean fetch_camera() {
+    public static String fetch_camera() {
         if (socket == null) {
-            return null;
+            return "";
         }
 
         try {
@@ -247,13 +247,13 @@ public class TCPConnected {
                     String string = result.toString();
                     result = new StringBuilder("");
                     BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
-                    return bodyBean;
+                    return getResult(string);
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
+        return "";
     }
 
     /**

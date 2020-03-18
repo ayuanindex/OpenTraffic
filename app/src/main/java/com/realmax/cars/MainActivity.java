@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -14,7 +15,6 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.tcputil.TCPConnected;
 import com.realmax.cars.utils.EncodeAndDecode;
 
@@ -96,9 +96,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 while (true) {
                     try {
                         // 接受服务端返回的数据
-                        BodyBean bodyBean = TCPConnected.fetch_camera();
-                        if (bodyBean != null) {
-                            Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(bodyBean.getCameraImg());
+                        String imageData = TCPConnected.fetch_camera();
+                        if (!TextUtils.isEmpty(imageData)) {
+                            Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(imageData);
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
