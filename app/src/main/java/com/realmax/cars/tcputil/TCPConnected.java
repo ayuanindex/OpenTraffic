@@ -101,6 +101,7 @@ public class TCPConnected {
             public void run() {
                 super.run();
                 try {
+                    stop_camera();
                     byte[] combine = option(EncodeAndDecode.getStrUnicode("{\"cmd\": \"start\", \"deviceType\": \"" + device_type + "\", \"deviceId\": " + device_id + ", \"cameraNum\": " + camera_num + "}"));
                     outputStream.write(combine);
                     outputStream.flush();
@@ -225,33 +226,33 @@ public class TCPConnected {
     }
 
     public static String fetch_camera() {
-        if (socket == null) {
-            return "";
-        }
+        if (socket != null) {
 
-        try {
-            char left = '{';
-            char right = '}';
-            byte[] bytes = new byte[1024];
-            int read = inputStream.read(bytes);
-            String s = new String(bytes, 0, read);
-            for (char c : s.toCharArray()) {
-                if (c == left) {
-                    flag = true;
+
+            try {
+                char left = '{';
+                char right = '}';
+                byte[] bytes = new byte[1024];
+                int read = inputStream.read(bytes);
+                String s = new String(bytes, 0, read);
+                for (char c : s.toCharArray()) {
+                    if (c == left) {
+                        flag = true;
+                    }
+                    if (flag) {
+                        result.append(c);
+                    }
+                    if (c == right) {
+                        flag = false;
+                        String string = result.toString();
+                        result = new StringBuilder("");
+                        BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
+                        return getResult(string);
+                    }
                 }
-                if (flag) {
-                    result.append(c);
-                }
-                if (c == right) {
-                    flag = false;
-                    String string = result.toString();
-                    result = new StringBuilder("");
-                    BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
-                    return getResult(string);
-                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return "";
     }

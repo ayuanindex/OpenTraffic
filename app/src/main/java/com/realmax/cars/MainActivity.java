@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.btn_camera_one:
                 TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 1);
-                getData();
                 break;
             case R.id.btn_camera_two:
                 TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 2);
@@ -82,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tv_device.setText("设备：小车");
         tv_device_id.setText("ID：" + 1);
         tv_camera_number.setText("摄像头：" + 1);
+
+        getData();
     }
 
     /**
