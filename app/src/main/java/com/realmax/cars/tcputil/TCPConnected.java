@@ -251,7 +251,7 @@ public class TCPConnected {
                                         String string = result.toString();
                                         Log.i(TAG, "run: " + string);
                                         result = new StringBuilder("");
-                                        resultData.getResultData(getResult(string));
+                                        resultData.getResultData(string);
                                     }
                                 }
                             } catch (Exception e) {
@@ -271,7 +271,7 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getResult(String data) {
-        return data.substring(72, data.length());
+        return data.substring(72, data.length() - 2);
     }
 
     public interface ResultData {
