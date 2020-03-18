@@ -19,6 +19,7 @@ public class TCPConnected {
     private static final String TAG = "TCPConnected";
     private static Socket socket = null;
     private static StringBuilder result = new StringBuilder("");
+    private static boolean isRead = false;
     private static boolean flag = false;
     /**
      * 输入流：读取数据
@@ -45,6 +46,7 @@ public class TCPConnected {
             socket = new Socket(host, port);
             inputStream = socket.getInputStream();
             outputStream = socket.getOutputStream();
+            isRead = true;
             return socket;
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,13 +110,20 @@ public class TCPConnected {
      * 停止拍照
      */
     public static void stop_camera() {
-        try {
-            String command = "{\"cmd\": \"stop\"}";
-            outputStream.write(combine(new byte[]{(byte) 0xff, (byte) 0xaa, 0x02, 0x15, 0x00, 0x00, 0x00}, command.getBytes(), new byte[]{(byte) 0xeb, (byte) 0xff, 0x55}));
-            outputStream.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    isRead = false;
+                    String command = "{\"cmd\": \"stop\"}";
+                    outputStream.write(combine(new byte[]{(byte) 0xff, (byte) 0xaa, 0x02, 0x15, 0x00, 0x00, 0x00}, command.getBytes(), new byte[]{(byte) 0xeb, (byte) 0xff, 0x55}));
+                    outputStream.flush();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
     }
 
     /**
@@ -247,7 +256,7 @@ public class TCPConnected {
      * @param data 需要转换的数据
      * @return 返回json对象
      */
-    public static String getData(String data) {
+    public static String getResult(String data) {
         return data.substring(72, data.length() - 2);
     }
 }

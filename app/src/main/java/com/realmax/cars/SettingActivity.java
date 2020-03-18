@@ -16,8 +16,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.realmax.cars.tcputil.TCPConnected;
 import com.realmax.cars.utils.SpUtil;
 
-import java.net.Socket;
-
 /**
  * @ProjectName: Cars
  * @Package: com.realmax.cars
@@ -81,10 +79,12 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
 
     private void submit() {
         String ip = et_ip.getText().toString().trim();
+        // 判断ip是否为空
         if (TextUtils.isEmpty(ip)) {
             Toast.makeText(this, "请输入IP", Toast.LENGTH_SHORT).show();
             return;
         }
+        // 判断与之前连接的ip是否相同，如果不相同则断开连
         if (!host.equals(ip) && TCPConnected.getSocket() != null) {
             TCPConnected.stop();
             tv_link_status.setText("通讯：未连接");
@@ -93,17 +93,21 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
             Toast.makeText(SettingActivity.this, "已连接", Toast.LENGTH_SHORT).show();
             return;
         }
-        new Thread() {
+        String host = et_ip.getText().toString().trim();
+        TCPConnected.start(host, 8527);
+        TCPConnected.fetch_camera(new TCPConnected.ResultData() {
             @Override
-            public void run() {
-                super.run();
-                String host = et_ip.getText().toString().trim();
-                Socket socket = TCPConnected.start(host, 8527);
+            public void getData(String data) {
+                Log.i(TAG, "getData: " + data);
+            }
+
+            @Override
+            public void isConnected(boolean isConnected) {
                 String msg = "";
-                if (socket != null) {
+                if (isConnected) {
                     msg = "连接成功";
                     SpUtil.putString("host", host);
-                    host = host;
+                    SettingActivity.this.host = host;
                     et_ip.setText(host);
                 } else {
                     msg = "连接失败";
@@ -118,6 +122,6 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
                     }
                 });
             }
-        }.start();
+        });
     }
 }
