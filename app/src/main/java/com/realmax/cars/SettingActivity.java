@@ -94,13 +94,7 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
             return;
         }
         String host = et_ip.getText().toString().trim();
-        TCPConnected.start(host, 8527);
-        TCPConnected.fetch_camera(new TCPConnected.ResultData() {
-            @Override
-            public void getData(String data) {
-                Log.i(TAG, "getData: " + data);
-            }
-
+        TCPConnected.start(host, 8527, new TCPConnected.ResultData() {
             @Override
             public void isConnected(boolean isConnected) {
                 String msg = "";
@@ -121,6 +115,11 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
                         Toast.makeText(SettingActivity.this, finalMsg, Toast.LENGTH_SHORT).show();
                     }
                 });
+            }
+
+            @Override
+            public void getResultData(String data) {
+
             }
         });
     }

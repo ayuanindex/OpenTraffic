@@ -1,7 +1,7 @@
 package com.realmax.cars.tcputil;
 
-import com.google.gson.Gson;
-import com.realmax.cars.bean.BodyBean;
+import android.util.Log;
+
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import java.io.IOException;
@@ -19,7 +19,7 @@ public class TCPConnected {
     private static final String TAG = "TCPConnected";
     private static Socket socket = null;
     private static StringBuilder result = new StringBuilder("");
-    private static boolean isRead = false;
+    private static boolean isRead = true;
     private static boolean flag = false;
     /**
      * 输入流：读取数据
@@ -39,19 +39,26 @@ public class TCPConnected {
      *
      * @param host 地址
      * @param port 端口号
-     * @return 返回连接的socket对象
      */
-    public static Socket start(String host, int port) {
-        try {
-            socket = new Socket(host, port);
-            inputStream = socket.getInputStream();
-            outputStream = socket.getOutputStream();
-            isRead = true;
-            return socket;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public static void start(String host, int port, ResultData resultData) {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run();
+                try {
+                    socket = new Socket(host, port);
+                    inputStream = socket.getInputStream();
+                    outputStream = socket.getOutputStream();
+                    if (socket.isConnected()) {
+                        isRead = false;
+                    }
+                    resultData.isConnected(socket.isConnected());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }.start();
     }
 
     /**
@@ -218,36 +225,43 @@ public class TCPConnected {
         return ret;
     }
 
-    public static BodyBean fetch_camera() {
-        if (socket == null) {
-            return null;
+    public static void fetch_camera(ResultData resultData) {
+        if (isRead) {
+            new Thread() {
+                @Override
+                public void run() {
+                    super.run();
+                    while (true) {
+                        if (!isRead) {
+                            try {
+                                char left = '{';
+                                char right = '}';
+                                byte[] bytes = new byte[1024];
+                                int read = inputStream.read(bytes);
+                                String s = new String(bytes, 0, read);
+                                for (char c : s.toCharArray()) {
+                                    if (c == left) {
+                                        flag = true;
+                                    }
+                                    if (flag) {
+                                        result.append(c);
+                                    }
+                                    if (c == right) {
+                                        flag = false;
+                                        String string = result.toString();
+                                        Log.i(TAG, "run: " + string);
+                                        result = new StringBuilder("");
+                                        resultData.getResultData(getResult(string));
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }
+            }.start();
         }
-
-        try {
-            char left = '{';
-            char right = '}';
-            byte[] bytes = new byte[1024];
-            int read = inputStream.read(bytes);
-            String s = new String(bytes, 0, read);
-            for (char c : s.toCharArray()) {
-                if (c == left) {
-                    flag = true;
-                }
-                if (flag) {
-                    result.append(c);
-                }
-                if (c == right) {
-                    flag = false;
-                    String string = result.toString();
-                    result = new StringBuilder("");
-                    BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
-                    return bodyBean;
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     /**
@@ -257,6 +271,12 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getResult(String data) {
-        return data.substring(72, data.length() - 2);
+        return data.substring(72, data.length());
+    }
+
+    public interface ResultData {
+        void isConnected(boolean isConnected);
+
+        void getResultData(String data);
     }
 }

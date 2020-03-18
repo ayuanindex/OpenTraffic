@@ -83,9 +83,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tv_camera_number.setText("摄像头：" + 1);
 
         TCPConnected.fetch_camera(new TCPConnected.ResultData() {
+            @Override
+            public void isConnected(boolean isConnected) {
+                Log.i(TAG, "isConnected: 是否连接：" + isConnected);
+            }
+
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
-            public void getData(String data) {
+            public void getResultData(String data) {
+                Log.i(TAG, "getResultData: " + data);
                 Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(data);
                 runOnUiThread(new Runnable() {
                     @Override
@@ -93,11 +99,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         iv_image.setImageBitmap(bitmap);
                     }
                 });
-            }
-
-            @Override
-            public void isConnected(boolean isConnected) {
-                Log.i(TAG, "isConnected: 是否连接：" + isConnected);
             }
         });
     }
