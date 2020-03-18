@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -81,14 +80,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         iv_add.setOnClickListener(new View.OnClickListener() {
-            private void initView(View view) {
-                etName = (EditText) view.findViewById(R.id.et_name);
-                etId = (EditText) view.findViewById(R.id.et_id);
-                etCamera = (EditText) view.findViewById(R.id.et_camera);
-                btnCancal = (Button) view.findViewById(R.id.btn_cancal);
-                btnOk = (Button) view.findViewById(R.id.btn_ok);
-            }
-
             private Button btnOk;
             private Button btnCancal;
             private EditText etCamera;
@@ -134,6 +125,14 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 alertDialog.show();
+            }
+
+            private void initView(View view) {
+                etName = (EditText) view.findViewById(R.id.et_name);
+                etId = (EditText) view.findViewById(R.id.et_id);
+                etCamera = (EditText) view.findViewById(R.id.et_camera);
+                btnCancal = (Button) view.findViewById(R.id.btn_cancal);
+                btnOk = (Button) view.findViewById(R.id.btn_ok);
             }
         });
 

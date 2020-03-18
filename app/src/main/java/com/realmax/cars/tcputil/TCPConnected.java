@@ -147,7 +147,7 @@ public class TCPConnected {
         // 帧长度=帧头+版本号+长度+帧尾
         byte[] lens = Int2Bytes_LE(head_len);
         // 加和校验=协议版本号+帧长度+数据
-        byte[] combine = combine(new byte[]{0x02}, lens, commandBytes, new byte[]{0x00, (byte) 0xff55});
+        byte[] combine = combine(new byte[]{(byte) 0xff, (byte) 0xaa, (byte) 0x02}, lens, commandBytes, new byte[]{(byte) 0x00, (byte) 0xff, (byte) 0x55});
         int checkSum = checkSum(combine, size);
         //*option:��S   {"cmd": "start", "deviceType": "\u5c0f\u8f66", "deviceId": 1, "cameraNum": 1}��U*/
         /*??S   {"cmd": "start", "deviceType": "\u5c0f\u8f66", "deviceId": 1, "cameraNum": 1}??U*/
@@ -227,8 +227,6 @@ public class TCPConnected {
 
     public static String fetch_camera() {
         if (socket != null) {
-
-
             try {
                 char left = '{';
                 char right = '}';
@@ -264,7 +262,7 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getResult(String data) {
-        return data.substring(73, data.length() - 2);
+        return data.substring(72, data.length() - 2);
     }
 
     public interface ResultData {
