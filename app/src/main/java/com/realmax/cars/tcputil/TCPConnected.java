@@ -1,19 +1,13 @@
 package com.realmax.cars.tcputil;
 
-import android.util.Log;
-
 import com.google.gson.Gson;
 import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.utils.EncodeAndDecode;
-
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 
 /**
  * @ProjectName: Cars
@@ -99,14 +93,7 @@ public class TCPConnected {
             public void run() {
                 super.run();
                 try {
-                    HashMap<String, Object> hashMap = new HashMap<>();
-                    hashMap.put("cmd", "start");
-                    hashMap.put("deviceType", device_type);
-                    hashMap.put("deviceId", device_id);
-                    hashMap.put("cameraNum", camera_num);
-                    // 将传入参数转换成json字符串
-                    String command = getJsonString(hashMap);
-                    byte[] combine = option(EncodeAndDecode.getStrUnicode(command));
+                    byte[] combine = option(EncodeAndDecode.getStrUnicode("{\"cmd\": \"start\", \"deviceType\": \"" + device_type + "\", \"deviceId\": " + device_id + ", \"cameraNum\": " + camera_num + "}"));
                     outputStream.write(combine);
                     outputStream.flush();
                 } catch (IOException e) {
@@ -117,14 +104,18 @@ public class TCPConnected {
         }.start();
     }
 
-    /*def checksum(self, buffer, size):
-        cs = 0
-        i = 2
-        j = size - 3
-        while i < j:
-            cs += buffer[i]
-            i += 1
-        return cs & 0xff*/
+    /**
+     * 停止拍照
+     */
+    public static void stop_camera() {
+        try {
+            String command = "{\"cmd\": \"stop\"}";
+            outputStream.write(combine(new byte[]{(byte) 0xff, (byte) 0xaa, 0x02, 0x15, 0x00, 0x00, 0x00}, command.getBytes(), new byte[]{(byte) 0xeb, (byte) 0xff, 0x55}));
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * 将需要发送的消息加工成服务端可识别的数据
@@ -134,50 +125,33 @@ public class TCPConnected {
      */
     private static byte[] option(String command) {
         // 指令
-        byte[] commandBytes = command.getBytes(StandardCharsets.UTF_8);
-        // 帧头
-        byte[] headBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xffaa)).getBytes();
-        // 版本号
-        byte[] versionBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x02)).getBytes();
-        // 帧尾
-        byte[] tailBytes = EncodeAndDecode.decode16ToStr(Integer.toHexString(0xff55)).getBytes();
-        byte[] len = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x530000)).getBytes();
-        byte[] check = EncodeAndDecode.decode16ToStr(Integer.toHexString(0x97)).getBytes();
-
-        /*int size = commandBytes.length + 10;
-        int len = size - 4;*/
-        // 将所有数据的额byte数组拼接起来
-        byte[] start = new byte[]{(byte) 0xff, (byte) 0xaa, (byte) 0x02, (byte) 0x53, (byte) 0x00, (byte) 0x00, (byte) 0x00};
-        byte[] end = {(byte) 0x97, (byte) 0xff, 0x55};
-        byte[] combine = combine(start, commandBytes, end);
-        Log.i(TAG, "option: " + new String(combine));
-        return combine;
-        /*return combine(headBytes, versionBytes, len, commandBytes, check, tailBytes);*/
-    }
-
-    /**
-     * 任意个byte数组合并
-     *
-     * @param bytes
-     * @return 发挥合并后的byte数组
-     */
-    public static byte[] combine(byte[]... bytes) {
-        // 开始合并的位置
-        int position = 0;
-        // 新数组的总长度
-        int length = 0;
-        // 算出新数组的总长度
-        for (byte[] aByte : bytes) {
-            length += aByte.length;
-        }
-        // 创建一个新的byte数组
-        byte[] ret = new byte[length];
-        // 将byte数组合并成一个byte数组
-        for (byte[] aByte : bytes) {
-            System.arraycopy(aByte, 0, ret, position, aByte.length);
-            position += aByte.length;
-        }
-        return ret;
+        byte[] commandBytes = command.getBytes();
+        int size = commandBytes.length + 10;
+        int head_len = size - 4;
+        // 帧长度=帧头+版本号+长度+帧尾
+        byte[] lens = Int2Bytes_LE(head_len);
+        // 加和校验=协议版本号+帧长度+数据
+        byte[] combine = combine(new byte[]{0x02}, lens, commandBytes, new byte[]{0x00, (byte) 0xff55});
+        int checkSum = checkSum(combine, size);
+        //*option:��S   {"cmd": "start", "deviceType": "\u5c0f\u8f66", "deviceId": 1, "cameraNum": 1}��U*/
+        /*??S   {"cmd": "start", "deviceType": "\u5c0f\u8f66", "deviceId": 1, "cameraNum": 1}??U*/
+        return combine(
+                new byte[]{
+                        (byte) 0xff,
+                        (byte) 0xaa,
+                        0x02,
+                        (byte) Integer.parseInt(Integer.toHexString(lens[0]), 16),
+                        (byte) Integer.parseInt(Integer.toHexString(lens[1]), 16),
+                        (byte) Integer.parseInt(Integer.toHexString(lens[2]), 16),
+                        (byte) Integer.parseInt(Integer.toHexString(lens[3]), 16)
+                },
+                commandBytes,
+                new byte[]{
+                        (byte) Integer.parseInt(Integer.toHexString(checkSum), 16),
+                        (byte) 0xff,
+                        0x55
+                }
+        );
     }
 
     public static int checkSum(byte[] bytes, int size) {
@@ -210,6 +184,31 @@ public class TCPConnected {
         return rst;
     }
 
+    /**
+     * 任意个byte数组合并
+     *
+     * @param bytes
+     * @return 发挥合并后的byte数组
+     */
+    public static byte[] combine(byte[]... bytes) {
+        // 开始合并的位置
+        int position = 0;
+        // 新数组的总长度
+        int length = 0;
+        // 算出新数组的总长度
+        for (byte[] aByte : bytes) {
+            length += aByte.length;
+        }
+        // 创建一个新的byte数组
+        byte[] ret = new byte[length];
+        // 将byte数组合并成一个byte数组
+        for (byte[] aByte : bytes) {
+            System.arraycopy(aByte, 0, ret, position, aByte.length);
+            position += aByte.length;
+        }
+        return ret;
+    }
+
     public static BodyBean fetch_camera() {
         if (socket == null) {
             return null;
@@ -240,25 +239,6 @@ public class TCPConnected {
             e.printStackTrace();
         }
         return null;
-    }
-
-    public static void stop_camera() {
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("cmd", "stop");
-        // 获取到json格式的指令
-        String command = getJsonString(hashMap);
-        option(command);
-    }
-
-    /**
-     * 将Map集合转换成json字符串
-     *
-     * @param hashMap map集合
-     * @return 返回json字符串
-     */
-    private static String getJsonString(HashMap<String, Object> hashMap) {
-        JSONObject jsonObject = new JSONObject(hashMap);
-        return jsonObject.toString();
     }
 
     /**
