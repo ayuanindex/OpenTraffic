@@ -1,37 +1,45 @@
 package com.realmax.cars;
 
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.realmax.cars.bean.CameraBean;
 import com.realmax.cars.tcputil.TCPConnected;
 import com.realmax.cars.utils.EncodeAndDecode;
 
-import java.net.Socket;
+import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private TextView tv_link_status;
     private TextView tv_device;
     private TextView tv_device_id;
     private TextView tv_camera_number;
     private ImageView iv_image;
-    private Button btn_camera_one;
-    private Button btn_camera_two;
     private Button btn_setting;
     private boolean flag = false;
-    private Socket socket;
+    private Spinner sp_select;
+    private ImageView iv_add;
+    private ArrayList<CameraBean> cameraBeans;
+    private CustomerAdapter customerAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,41 +56,96 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tv_device_id = (TextView) findViewById(R.id.tv_device_id);
         tv_camera_number = (TextView) findViewById(R.id.tv_camera_number);
         iv_image = (ImageView) findViewById(R.id.iv_image);
-        btn_camera_one = (Button) findViewById(R.id.btn_camera_one);
-        btn_camera_two = (Button) findViewById(R.id.btn_camera_two);
         btn_setting = (Button) findViewById(R.id.btn_setting);
+        sp_select = (Spinner) findViewById(R.id.sp_select);
+        iv_add = (ImageView) findViewById(R.id.iv_add);
     }
 
     private void initEvent() {
-        btn_camera_one.setOnClickListener(this);
-        btn_camera_two.setOnClickListener(this);
-        btn_setting.setOnClickListener(this);
-    }
+        sp_select.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.btn_camera_one:
-                TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 1);
-                break;
-            case R.id.btn_camera_two:
-                TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 2);
-                break;
-            case R.id.btn_setting:
-                startActivity(new Intent(this, SettingActivity.class));
-                break;
-        }
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+        });
+
+        iv_add.setOnClickListener(new View.OnClickListener() {
+            private void initView(View view) {
+                etName = (EditText) view.findViewById(R.id.et_name);
+                etId = (EditText) view.findViewById(R.id.et_id);
+                etCamera = (EditText) view.findViewById(R.id.et_camera);
+                btnCancal = (Button) view.findViewById(R.id.btn_cancal);
+                btnOk = (Button) view.findViewById(R.id.btn_ok);
+            }
+
+            private Button btnOk;
+            private Button btnCancal;
+            private EditText etCamera;
+            private EditText etId;
+            private EditText etName;
+
+            @Override
+            public void onClick(View v) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                AlertDialog alertDialog = builder.create();
+                View view = View.inflate(MainActivity.this, R.layout.dialog_add_camera, null);
+                alertDialog.setView(view);
+                initView(view);
+                btnOk.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String name = etName.getText().toString().trim();
+                        if (TextUtils.isEmpty(name)) {
+                            Toast.makeText(MainActivity.this, "请输入名称", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String id = etId.getText().toString().trim();
+                        if (TextUtils.isEmpty(name)) {
+                            Toast.makeText(MainActivity.this, "请输入ID", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String camera_id = etCamera.getText().toString().trim();
+                        if (TextUtils.isEmpty(name)) {
+                            Toast.makeText(MainActivity.this, "请输入摄像头编号", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        Toast.makeText(MainActivity.this, "添加成功", Toast.LENGTH_SHORT).show();
+                        cameraBeans.add(new CameraBean(name, Integer.parseInt(id), Integer.parseInt(camera_id)));
+                        customerAdapter.notifyDataSetChanged();
+                        alertDialog.dismiss();
+                    }
+                });
+
+                btnCancal.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        alertDialog.dismiss();
+                    }
+                });
+                alertDialog.show();
+            }
+        });
+
+        btn_setting.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, SettingActivity.class));
+            }
+        });
     }
 
     @SuppressLint("SetTextI18n")
     private void initData() {
-        // 显示状态
-        tv_link_status.setText("通讯：未连接");
-        tv_device.setText("设备：小车");
-        tv_device_id.setText("ID：" + 1);
-        tv_camera_number.setText("摄像头：" + 1);
-
+        // 开启线程实时获取数据
         getData();
+        cameraBeans = new ArrayList<>();
+        customerAdapter = new CustomerAdapter();
+        sp_select.setAdapter(customerAdapter);
     }
 
     /**
@@ -144,4 +207,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             tv_link_status.setText("通讯：已连接");
         }
     }
+
+    class CustomerAdapter extends BaseAdapter {
+        private TextView tvText;
+
+        @Override
+        public int getCount() {
+            return cameraBeans.size();
+        }
+
+        @Override
+        public CameraBean getItem(int position) {
+            return cameraBeans.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            View view;
+            if (convertView == null) {
+                view = View.inflate(MainActivity.this, R.layout.item_sp, null);
+            } else {
+                view = convertView;
+            }
+            initView(view);
+            tvText.setText(getItem(position).getName() + "-" + getItem(position).getId() + "-" + getItem(position).getCameraId());
+            return view;
+        }
+
+        private void initView(View view) {
+            tvText = (TextView) view.findViewById(R.id.tv_text);
+        }
+    }
+
 }
