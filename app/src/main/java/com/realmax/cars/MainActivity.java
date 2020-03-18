@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -15,6 +14,7 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.tcputil.TCPConnected;
 import com.realmax.cars.utils.EncodeAndDecode;
 
@@ -63,7 +63,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_camera_one:
-                TCPConnected.start_camera("小车", 1, 1);
+                TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 1);
+                getData();
                 break;
             case R.id.btn_camera_two:
                 TCPConnected.start_camera(EncodeAndDecode.getStrUnicode("小车"), 1, 2);
@@ -81,26 +82,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tv_device.setText("设备：小车");
         tv_device_id.setText("ID：" + 1);
         tv_camera_number.setText("摄像头：" + 1);
+    }
 
-        TCPConnected.fetch_camera(new TCPConnected.ResultData() {
-            @Override
-            public void isConnected(boolean isConnected) {
-                Log.i(TAG, "isConnected: 是否连接：" + isConnected);
-            }
-
+    /**
+     * 获取返回的数据
+     */
+    private void getData() {
+        new Thread() {
             @RequiresApi(api = Build.VERSION_CODES.O)
             @Override
-            public void getResultData(String data) {
-                Log.i(TAG, "getResultData: " + data);
-                Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(data);
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        iv_image.setImageBitmap(bitmap);
+            public void run() {
+                super.run();
+                while (true) {
+                    try {
+                        // 接受服务端返回的数据
+                        BodyBean bodyBean = TCPConnected.fetch_camera();
+                        if (bodyBean != null) {
+                            Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(bodyBean.getCameraImg());
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    iv_image.setImageBitmap(bitmap);
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-                });
+                }
             }
-        });
+        }.start();
     }
 
     @Override

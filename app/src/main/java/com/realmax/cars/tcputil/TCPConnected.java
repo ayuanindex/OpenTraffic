@@ -1,7 +1,7 @@
 package com.realmax.cars.tcputil;
 
-import android.util.Log;
-
+import com.google.gson.Gson;
+import com.realmax.cars.bean.BodyBean;
 import com.realmax.cars.utils.EncodeAndDecode;
 
 import java.io.IOException;
@@ -56,7 +56,6 @@ public class TCPConnected {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
         }.start();
     }
@@ -225,43 +224,36 @@ public class TCPConnected {
         return ret;
     }
 
-    public static void fetch_camera(ResultData resultData) {
-        if (isRead) {
-            new Thread() {
-                @Override
-                public void run() {
-                    super.run();
-                    while (true) {
-                        if (!isRead) {
-                            try {
-                                char left = '{';
-                                char right = '}';
-                                byte[] bytes = new byte[1024];
-                                int read = inputStream.read(bytes);
-                                String s = new String(bytes, 0, read);
-                                for (char c : s.toCharArray()) {
-                                    if (c == left) {
-                                        flag = true;
-                                    }
-                                    if (flag) {
-                                        result.append(c);
-                                    }
-                                    if (c == right) {
-                                        flag = false;
-                                        String string = result.toString();
-                                        Log.i(TAG, "run: " + string);
-                                        result = new StringBuilder("");
-                                        resultData.getResultData(string);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-            }.start();
+    public static BodyBean fetch_camera() {
+        if (socket == null) {
+            return null;
         }
+
+        try {
+            char left = '{';
+            char right = '}';
+            byte[] bytes = new byte[1024];
+            int read = inputStream.read(bytes);
+            String s = new String(bytes, 0, read);
+            for (char c : s.toCharArray()) {
+                if (c == left) {
+                    flag = true;
+                }
+                if (flag) {
+                    result.append(c);
+                }
+                if (c == right) {
+                    flag = false;
+                    String string = result.toString();
+                    result = new StringBuilder("");
+                    BodyBean bodyBean = new Gson().fromJson(string, BodyBean.class);
+                    return bodyBean;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -271,7 +263,7 @@ public class TCPConnected {
      * @return 返回json对象
      */
     public static String getResult(String data) {
-        return data.substring(72, data.length() - 2);
+        return data.substring(73, data.length() - 2);
     }
 
     public interface ResultData {
