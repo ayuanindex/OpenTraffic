@@ -1,4 +1,4 @@
-package com.realmax.cars.bean;
+package com.realmax.cameras.bean;
 
 /**
  * @ProjectName: Cars

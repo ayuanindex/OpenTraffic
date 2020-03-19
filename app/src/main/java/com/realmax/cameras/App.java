@@ -1,4 +1,4 @@
-package com.realmax.cars;
+package com.realmax.cameras;
 
 import android.app.Application;
 import android.content.Context;

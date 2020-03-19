@@ -1,9 +1,8 @@
-package com.realmax.cars;
+package com.realmax.cameras;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -13,8 +12,8 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.realmax.cars.tcputil.TCPConnected;
-import com.realmax.cars.utils.SpUtil;
+import com.realmax.cameras.tcputil.TCPConnected;
+import com.realmax.cameras.utils.SpUtil;
 
 /**
  * @ProjectName: Cars
@@ -67,16 +66,24 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
 
     private void initData() {
         String status = "";
+
+        // 判断tcp连接是否建立，如果建立则不为空
         if (TCPConnected.getSocket() == null) {
             status = "通讯：未连接";
         } else {
             status = "通讯：已连接";
         }
+
+        // 将当前的连接状态回显到控件中
         tv_link_status.setText(status);
+        // 获取上一次连接成功记录的ip，将其显示到输入框中（此处通过SharedPreferences实现对数据简单存储）
         host = SpUtil.getString("host", "127.0.0.1");
         et_ip.setText(host);
     }
 
+    /**
+     * 开启连接
+     */
     private void submit() {
         String ip = et_ip.getText().toString().trim();
         // 判断ip是否为空
@@ -84,42 +91,45 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
             Toast.makeText(this, "请输入IP", Toast.LENGTH_SHORT).show();
             return;
         }
+
         // 判断与之前连接的ip是否相同，如果不相同则断开连
         if (!host.equals(ip) && TCPConnected.getSocket() != null) {
+            // host不相同断开连接
             TCPConnected.stop();
             tv_link_status.setText("通讯：未连接");
         } else if (TCPConnected.getSocket() != null) {
-            Log.i(TAG, "onClick: 已连接");
+            // 相同的IP显示"已连接"
             Toast.makeText(SettingActivity.this, "已连接", Toast.LENGTH_SHORT).show();
             return;
         }
-        String host = et_ip.getText().toString().trim();
-        TCPConnected.start(host, 8527, new TCPConnected.ResultData() {
+
+        // 开启连接
+        TCPConnected.start(ip, 8527, new TCPConnected.ResultData() {
             @Override
             public void isConnected(boolean isConnected) {
                 String msg = "";
+
                 if (isConnected) {
                     msg = "连接成功";
-                    SpUtil.putString("host", host);
-                    SettingActivity.this.host = host;
-                    et_ip.setText(host);
+                    // 将数据存入sp中
+                    SpUtil.putString("host", ip);
+                    // 记录但前连接的地址
+                    host = ip;
                 } else {
                     msg = "连接失败";
                 }
+
                 String finalMsg = msg;
                 runOnUiThread(new Runnable() {
                     @SuppressLint("SetTextI18n")
                     @Override
                     public void run() {
+                        // 连接状态
                         tv_link_status.setText("通讯：" + (finalMsg.equals("连接成功") ? "已连接" : "未连接"));
+                        // 弹出Toast提示用户是否连接成功
                         Toast.makeText(SettingActivity.this, finalMsg, Toast.LENGTH_SHORT).show();
                     }
                 });
-            }
-
-            @Override
-            public void getResultData(String data) {
-
             }
         });
     }

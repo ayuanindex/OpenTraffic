@@ -1,4 +1,4 @@
-package com.realmax.cars;
+package com.realmax.cameras;
 
 import org.junit.Test;
 

@@ -1,10 +1,10 @@
-package com.realmax.cars.utils;
+package com.realmax.cameras.utils;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import com.realmax.cars.App;
+import com.realmax.cameras.App;
 
 /**
  * @ProjectName: Cars

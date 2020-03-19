@@ -1,4 +1,4 @@
-package com.realmax.cars;
+package com.realmax.cameras;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
@@ -21,9 +21,9 @@ import android.widget.Toast;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.realmax.cars.bean.CameraBean;
-import com.realmax.cars.tcputil.TCPConnected;
-import com.realmax.cars.utils.EncodeAndDecode;
+import com.realmax.cameras.bean.CameraBean;
+import com.realmax.cameras.tcputil.TCPConnected;
+import com.realmax.cameras.utils.EncodeAndDecode;
 
 import java.util.ArrayList;
 
@@ -66,10 +66,13 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint("SetTextI18n")
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                // 下拉框的监听，通过点击拿到对应的设备来进行连接
                 CameraBean cameraBean = cameraBeans.get(position);
+                // 将选择的设备显示到屏幕中对应的控件上
                 tv_device.setText("设备：" + cameraBean.getName());
                 tv_device_id.setText("ID：" + cameraBean.getId());
                 tv_camera_number.setText("摄像头：" + cameraBean.getCameraId());
+                // 开始使用对应的设备进行拍照
                 TCPConnected.start_camera(cameraBean.getName(), cameraBean.getId(), cameraBean.getCameraId());
             }
 
@@ -79,6 +82,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // 点击按钮弹出对话框添加设备
         iv_add.setOnClickListener(new View.OnClickListener() {
             private Button btnOk;
             private Button btnCancal;
@@ -88,14 +92,20 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
+                // 初始化对话框
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 AlertDialog alertDialog = builder.create();
+                // 自定义对话框布局
                 View view = View.inflate(MainActivity.this, R.layout.dialog_add_camera, null);
+                // 设置对话框布局
                 alertDialog.setView(view);
+                // 初始化空间
                 initView(view);
+                // 设置对话框中控件的点击事件
                 btnOk.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
+                        // 对各个输入框进行判空处理
                         String name = etName.getText().toString().trim();
                         if (TextUtils.isEmpty(name)) {
                             Toast.makeText(MainActivity.this, "请输入名称", Toast.LENGTH_SHORT).show();
@@ -111,19 +121,25 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(MainActivity.this, "请输入摄像头编号", Toast.LENGTH_SHORT).show();
                             return;
                         }
+                        // 弹出吐司提示用户是否添加成功
                         Toast.makeText(MainActivity.this, "添加成功", Toast.LENGTH_SHORT).show();
+                        // 将new一个新的设备添加到设备集合中，下来框显示的就是设备集合
                         cameraBeans.add(new CameraBean(name, Integer.parseInt(id), Integer.parseInt(camera_id)));
+                        // 刷新Spinner的数据适配器
                         customerAdapter.notifyDataSetChanged();
+                        // 关闭对话框
                         alertDialog.dismiss();
                     }
                 });
 
+                // 取消按钮的点击事件
                 btnCancal.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         alertDialog.dismiss();
                     }
                 });
+                // 显示对话框
                 alertDialog.show();
             }
 
@@ -139,6 +155,7 @@ public class MainActivity extends AppCompatActivity {
         btn_setting.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // 跳转到设置界面
                 startActivity(new Intent(MainActivity.this, SettingActivity.class));
             }
         });
@@ -148,8 +165,12 @@ public class MainActivity extends AppCompatActivity {
     private void initData() {
         // 开启线程实时获取数据
         getData();
+
+        // 创建一个设备集合
         cameraBeans = new ArrayList<>();
+        // 初始化Spinner的数据适配器
         customerAdapter = new CustomerAdapter();
+        // 设置Spinner的数据适配器
         sp_select.setAdapter(customerAdapter);
     }
 
@@ -166,14 +187,19 @@ public class MainActivity extends AppCompatActivity {
                     try {
                         // 接受服务端返回的数据
                         String imageData = TCPConnected.fetch_camera();
+                        // 对数据进行判空处理
                         if (!TextUtils.isEmpty(imageData)) {
+                            // 将拿到的base64的图片上护具通过decodeBase64ToImage方法将其转换成bitmap图片
                             Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(imageData);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    iv_image.setImageBitmap(bitmap);
-                                }
-                            });
+                            if (bitmap != null) {
+                                // 在主线中将图片数据显示到控件中
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        iv_image.setImageBitmap(bitmap);
+                                    }
+                                });
+                            }
                         }
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -185,15 +211,20 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        // 点击两次返回按钮退出程序
+        // flag默认为false
         if (flag) {
             super.onBackPressed();
         } else {
+            // 将flag设置为true，第二次点击的时候退出程序
             flag = true;
+            // 开启线程等待第二次点击
             new Thread() {
                 @Override
                 public void run() {
                     super.run();
                     try {
+                        // 等待2s后如果不点击则将flag设置为false，则需要重新开始这段操作
                         sleep(2000);
                         flag = false;
                     } catch (InterruptedException e) {
@@ -205,15 +236,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (TCPConnected.getSocket() != null && TCPConnected.getSocket().isConnected()) {
-            tv_link_status.setText("通讯：已连接");
-        }
-    }
-
+    /**
+     * Spinner的数据适配器
+     */
     class CustomerAdapter extends BaseAdapter {
+
         private TextView tvText;
 
         @Override
@@ -231,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
             return position;
         }
 
+        @SuppressLint("SetTextI18n")
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             View view;
@@ -247,6 +275,23 @@ public class MainActivity extends AppCompatActivity {
         private void initView(View view) {
             tvText = (TextView) view.findViewById(R.id.tv_text);
         }
+
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (TCPConnected.getSocket() != null && TCPConnected.getSocket().isConnected()) {
+            tv_link_status.setText("通讯：已连接");
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // 停止拍照
+        TCPConnected.stop_camera();
+        // 界面销毁时停止服务
+        TCPConnected.stop();
+    }
 }

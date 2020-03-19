@@ -1,14 +1,12 @@
-package com.realmax.cars.utils;
+package com.realmax.cameras.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Build;
-import android.text.TextUtils;
 
 import androidx.annotation.RequiresApi;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 
@@ -48,52 +46,6 @@ public class EncodeAndDecode {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    /**
-     * 字符串转化成为16进制字符串
-     *
-     * @param s 需要转换的字符串
-     * @return 返回16进制的字符串
-     */
-    public static String encodeStrTo16(String s) {
-        StringBuilder str = new StringBuilder();
-        // 循环将去除每个字符将其抓换成16进制
-        for (int i = 0; i < s.length(); i++) {
-            int ch = (int) s.charAt(i);
-            String s4 = Integer.toHexString(ch);
-            str.append(s4);
-        }
-        return str.toString();
-    }
-
-    /**
-     * 16进制转换成为string类型字符串
-     *
-     * @param s 需要转换的16进制字符串
-     * @return 返回正常UTF8的字符串
-     */
-    public static String decode16ToStr(String s) {
-        try {
-            // 对传进来的字符串是否为空进行判断
-            if (TextUtils.isEmpty(s)) {
-                return "";
-            }
-            // 替换掉所有的空格
-            s = s.replace(" ", "");
-            byte[] baKeyword = new byte[s.length() / 2];
-            for (int i = 0; i < baKeyword.length; i++) {
-                try {
-                    baKeyword[i] = (byte) (0xff & Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-            s = new String(baKeyword, StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return s;
     }
 
     /**
