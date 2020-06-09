@@ -2,11 +2,16 @@ package com.realmax.cameras.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.PixelFormat;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 
@@ -24,7 +29,7 @@ public class EncodeAndDecode {
      * @return 返回Bitmap类型的图拍你
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public static Bitmap decodeBase64ToImage(String imgData) {  //对字节数组字符串进行Base64解码并生成图片
+    public static Bitmap base64ToImage(String imgData) {  //对字节数组字符串进行Base64解码并生成图片
         //图像数据为空
         if (imgData == null) {
             return null;
@@ -76,5 +81,57 @@ public class EncodeAndDecode {
             }
         }
         return (new String(unicode));
+    }
+
+    /**
+     * @param drawable
+     * @return
+     */
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    public static Bitmap drawableToBitmap(Drawable drawable) {
+        int width = drawable.getIntrinsicWidth();
+        int height = drawable.getIntrinsicHeight();
+        Bitmap bitmap = Bitmap.createBitmap(Math.min(width, 4096), Math.min(height, 4096), drawable.getOpacity() != PixelFormat.OPAQUE ? Bitmap.Config.ARGB_8888 : Bitmap.Config.RGB_565);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        drawable.draw(canvas);
+        return bitmap;
+    }
+
+    public static String bitmapToBase64(Bitmap bitmap) {
+        String result = null;
+        ByteArrayOutputStream baos = null;
+
+        try {
+            if (bitmap != null) {
+                baos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+
+                baos.flush();
+                baos.close();
+
+                byte[] bitmapBytes = baos.toByteArray();
+                result = android.util.Base64.encodeToString(bitmapBytes, android.util.Base64.DEFAULT);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (baos != null) {
+                    baos.flush();
+                    baos.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return result;
+    }
+
+    public static ByteArrayInputStream bitmapToByte(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return new ByteArrayInputStream(baos.toByteArray());
+        /*return baos.toByteArray();*/
     }
 }

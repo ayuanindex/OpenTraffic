@@ -1,8 +1,8 @@
 package com.realmax.cameras;
 
-import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -12,8 +12,12 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.realmax.cameras.tcputil.TCPConnected;
+import com.realmax.cameras.tcputil.CustomerHandlerBase;
+import com.realmax.cameras.tcputil.NettyLinkUtil;
+import com.realmax.cameras.tcputil.ValueUtil;
 import com.realmax.cameras.utils.SpUtil;
+
+import io.netty.channel.EventLoopGroup;
 
 /**
  * @ProjectName: Cars
@@ -61,6 +65,7 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.btn_back:
                 finish();
                 break;
+            default:
         }
     }
 
@@ -68,10 +73,10 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
         String status = "";
 
         // 判断tcp连接是否建立，如果建立则不为空
-        if (TCPConnected.getSocket() == null) {
-            status = "通讯：未连接";
-        } else {
+        if (ValueUtil.isCameraConnected()) {
             status = "通讯：已连接";
+        } else {
+            status = "通讯：未连接";
         }
 
         // 将当前的连接状态回显到控件中
@@ -85,52 +90,50 @@ public class SettingActivity extends AppCompatActivity implements View.OnClickLi
      * 开启连接
      */
     private void submit() {
-        String ip = et_ip.getText().toString().trim();
+        String ip = null;
+        ip = et_ip.getText().toString().trim();
         // 判断ip是否为空
         if (TextUtils.isEmpty(ip)) {
             Toast.makeText(this, "请输入IP", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // 判断与之前连接的ip是否相同，如果不相同则断开连
-        if (!host.equals(ip) && TCPConnected.getSocket() != null) {
-            // host不相同断开连接
-            TCPConnected.stop();
-            tv_link_status.setText("通讯：未连接");
-        } else if (TCPConnected.getSocket() != null) {
-            // 相同的IP显示"已连接"
-            Toast.makeText(SettingActivity.this, "已连接", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        SpUtil.putString("host", ip);
 
-        // 开启连接
-        TCPConnected.start(ip, 8527, new TCPConnected.ResultData() {
+        new Thread() {
             @Override
-            public void isConnected(boolean isConnected) {
-                String msg = "";
+            public void run() {
+                super.run();
+                try {
+                    CustomerHandlerBase nettyHandler = new CustomerHandlerBase();
+                    ValueUtil.getCustomerHandlerBases().put("camera", nettyHandler);
 
-                if (isConnected) {
-                    msg = "连接成功";
-                    // 将数据存入sp中
-                    SpUtil.putString("host", ip);
-                    // 记录但前连接的地址
-                    host = ip;
-                } else {
-                    msg = "连接失败";
+                    NettyLinkUtil nettyLinkUtil = new NettyLinkUtil(host, 8527);
+                    nettyLinkUtil.start(new NettyLinkUtil.Callback() {
+                        @Override
+                        public void success(EventLoopGroup eventLoopGroup) {
+                            Log.d(TAG, "success: 连接成功");
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    tv_link_status.setText("通讯：已连接");
+                                    ValueUtil.setCameraConnected(true);
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void error() {
+                            Log.d(TAG, "error: 连接失败");
+                            if (nettyHandler.getCustomerCallback() != null) {
+                                nettyHandler.getCustomerCallback().disConnected();
+                            }
+                        }
+                    }, nettyHandler);
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-
-                String finalMsg = msg;
-                runOnUiThread(new Runnable() {
-                    @SuppressLint("SetTextI18n")
-                    @Override
-                    public void run() {
-                        // 连接状态
-                        tv_link_status.setText("通讯：" + (finalMsg.equals("连接成功") ? "已连接" : "未连接"));
-                        // 弹出Toast提示用户是否连接成功
-                        Toast.makeText(SettingActivity.this, finalMsg, Toast.LENGTH_SHORT).show();
-                    }
-                });
             }
-        });
+        }.start();
     }
 }

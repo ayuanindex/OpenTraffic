@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -22,8 +23,13 @@ import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.realmax.cameras.bean.CameraBean;
-import com.realmax.cameras.tcputil.TCPConnected;
+import com.realmax.cameras.tcputil.CustomerCallback;
+import com.realmax.cameras.tcputil.CustomerHandlerBase;
+import com.realmax.cameras.tcputil.ValueUtil;
 import com.realmax.cameras.utils.EncodeAndDecode;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -66,14 +72,16 @@ public class MainActivity extends AppCompatActivity {
             @SuppressLint("SetTextI18n")
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                // 下拉框的监听，通过点击拿到对应的设备来进行连接
-                CameraBean cameraBean = cameraBeans.get(position);
-                // 将选择的设备显示到屏幕中对应的控件上
-                tv_device.setText("设备：" + cameraBean.getName());
-                tv_device_id.setText("ID：" + cameraBean.getId());
-                tv_camera_number.setText("摄像头：" + cameraBean.getCameraId());
-                // 开始使用对应的设备进行拍照
-                TCPConnected.start_camera(cameraBean.getName(), cameraBean.getId(), cameraBean.getCameraId());
+                if (cameraBeans.size() > 0) {
+                    // 下拉框的监听，通过点击拿到对应的设备来进行连接
+                    CameraBean cameraBean = cameraBeans.get(position);
+                    // 将选择的设备显示到屏幕中对应的控件上
+                    tv_device.setText("设备：" + cameraBean.getName());
+                    tv_device_id.setText("ID：" + cameraBean.getId());
+                    tv_camera_number.setText("摄像头：" + cameraBean.getCameraId());
+                    // 开始使用对应的设备进行拍照
+                    ValueUtil.sendCameraCmd(cameraBean.getName(), cameraBean.getId(), cameraBean.getCameraId());
+                }
             }
 
             @Override
@@ -163,8 +171,8 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("SetTextI18n")
     private void initData() {
-        // 开启线程实时获取数据
-        getData();
+        /*// 开启线程实时获取数据
+        getData();*/
 
         // 创建一个设备集合
         cameraBeans = new ArrayList<>();
@@ -172,41 +180,6 @@ public class MainActivity extends AppCompatActivity {
         customerAdapter = new CustomerAdapter();
         // 设置Spinner的数据适配器
         sp_select.setAdapter(customerAdapter);
-    }
-
-    /**
-     * 获取返回的数据
-     */
-    private void getData() {
-        new Thread() {
-            @RequiresApi(api = Build.VERSION_CODES.O)
-            @Override
-            public void run() {
-                super.run();
-                while (true) {
-                    try {
-                        // 接受服务端返回的数据
-                        String imageData = TCPConnected.fetch_camera();
-                        // 对数据进行判空处理
-                        if (!TextUtils.isEmpty(imageData)) {
-                            // 将拿到的base64的图片上护具通过decodeBase64ToImage方法将其转换成bitmap图片
-                            Bitmap bitmap = EncodeAndDecode.decodeBase64ToImage(imageData);
-                            if (bitmap != null) {
-                                // 在主线中将图片数据显示到控件中
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        iv_image.setImageBitmap(bitmap);
-                                    }
-                                });
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
     }
 
     @Override
@@ -239,7 +212,53 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Spinner的数据适配器
      */
+    private void getData() {
+        CustomerHandlerBase camera = ValueUtil.getCustomerHandlerBases().get("camera");
+        if (camera != null) {
+            camera.setCustomerCallback(new CustomerCallback() {
+                @Override
+                public void disConnected() {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            tv_link_status.setText("通讯：已断开");
+                        }
+                    });
+                }
+
+                @RequiresApi(api = Build.VERSION_CODES.O)
+                @Override
+                public void getResultData(String msg) {
+                    Log.d(TAG, "getResultData: " + msg);
+                    getImageData(msg);
+                }
+            });
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.O)
+    private void getImageData(String msg) {
+        try {
+            if (!TextUtils.isEmpty(msg)) {
+                JSONObject jsonObject = new JSONObject(msg);
+                String cameraImg = jsonObject.optString("cameraImg");
+                Bitmap bitmap = EncodeAndDecode.base64ToImage(cameraImg);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        iv_image.setImageBitmap(bitmap);
+                    }
+                });
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            String substring = msg.substring(1);
+            getImageData(substring);
+        }
+    }
+
     class CustomerAdapter extends BaseAdapter {
+
 
         private TextView tvText;
 
@@ -281,17 +300,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (TCPConnected.getSocket() != null && TCPConnected.getSocket().isConnected()) {
+        if (ValueUtil.isCameraConnected()) {
             tv_link_status.setText("通讯：已连接");
         }
-    }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // 停止拍照
-        TCPConnected.stop_camera();
-        // 界面销毁时停止服务
-        TCPConnected.stop();
+        getData();
     }
 }
